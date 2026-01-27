@@ -4,9 +4,8 @@
 
 ---
 
-## 🎯 Objectif Pédagogique
+## Architecture de l'application
 
-Cette application démontre comment trois composants distincts communiquent entre eux:
 
 ```
 ┌─────────────────┐     HTTP POST /api/orders    ┌──────────────┐
@@ -27,14 +26,14 @@ Cette application démontre comment trois composants distincts communiquent entr
 
 ---
 
-## 🚀 Démarrage Rapide (5 minutes)
+## Démarrage Rapide
 
 ### Prérequis Minimums
 - Docker installé et actif
 - Kind installé
 - kubectl installé
 - Java 21+
-- Maven
+- Gradle (ou utiliser le gradle wrapper inclus)
 - Node.js
 
 ### Lancer l'Application
@@ -206,25 +205,6 @@ kubectl rollout restart deployment/frontend
 
 ---
 
-## 🧑‍💻 Pour les Étudiants: Exercices Pratiques
-
-### Exercice 1 (Facile): Observer le flux complet
-Voir comment les 3 composants communiquent en temps réel.
-→ Voir [EXERCISES.md](EXERCISES.md)
-
-### Exercice 2 (Facile): Ajouter un champ au formulaire
-Modifier le frontend et le backend pour ajouter un champ "Notes spéciales".
-
-### Exercice 3 (Moyen): Ajouter une nouvelle route GET
-Afficher la liste des commandes précédentes.
-
-### Exercice 4 (Avancé): Horizontal Scaling
-Scaler le backend à 3 répliques et voir la distribution des requêtes.
-
-→ Voir [EXERCISES.md](EXERCISES.md) pour les détails complets
-
----
-
 ## 🔧 Modifications et Déploiement
 
 ### Modifier le Code
@@ -311,7 +291,7 @@ kind delete cluster --name order-app
 - [ ] Kind installé (`kind --version`)
 - [ ] kubectl installé (`kubectl --version`)
 - [ ] Java 21+ installé (`java --version`)
-- [ ] Maven installé (`mvn --version`)
+- [ ] Gradle installé OU gradle wrapper du projet (`./gradlew --version`)
 - [ ] Node.js installé (`node --version`)
 
 ### Après Déploiement
@@ -328,23 +308,7 @@ kind delete cluster --name order-app
 Pour des questions sur:
 - **Architecture** → Lire [ARCHITECTURE.md](ARCHITECTURE.md)
 - **Déploiement** → Lire [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-- **Exercices** → Lire [EXERCISES.md](EXERCISES.md)
 - **Navigation** → Lire [STRUCTURE.md](STRUCTURE.md)
 
 ---
 
-## ✨ Caractéristiques Pédagogiques
-
-✅ Architecture microservices simple et complète  
-✅ Démonstration claire Frontend → Gateway → Backend  
-✅ Logging détaillé pour observer le flux  
-✅ Déploiement automatisé et facile  
-✅ Exercices pratiques progressifs  
-✅ Code commenté pour l'apprentissage  
-✅ Documentation complète en français  
-
----
-
-**Bon apprentissage! 🚀**
-
-*Pour les étudiants en informatique apprenant les microservices et Kubernetes*
