@@ -31,7 +31,9 @@ FrontIngressBack/
 │           └── order.service.ts          # Service HTTP
 │
 ├── backend/                     # Service Spring Boot
-│   ├── pom.xml
+│   ├── build.gradle             # Configuration Gradle
+│   ├── settings.gradle          # Paramètres Gradle
+│   ├── gradlew                  # Gradle wrapper
 │   ├── Dockerfile               # Conteneurisation du backend
 │   └── src/main/java/com/orderapp/
 │       ├── OrderServiceApplication.java  # Point d'entrée

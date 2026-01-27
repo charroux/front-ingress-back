@@ -64,17 +64,19 @@ brew install kubectl
 # https://kubernetes.io/docs/tasks/tools/
 ```
 
-### 5. Maven (pour construire le backend)
+### 5. Gradle (pour construire le backend)
 
 **macOS:**
 ```bash
-brew install maven
+brew install gradle
 ```
 
 **Linux (Ubuntu):**
 ```bash
-sudo apt-get install maven
+sudo apt-get install gradle
 ```
+
+Note: Gradle est inclus dans le projet avec le gradle wrapper (`gradlew`), donc vous n'avez pas besoin de l'installer si vous utilisez le script de déploiement automatisé.
 
 ---
 
@@ -374,9 +376,9 @@ Avant de démarrer, vérifiez:
 - ✓ Docker est installé et le daemon est actif
 - ✓ Kind est installé (`kind --version`)
 - ✓ kubectl est installé (`kubectl --version`)
-- ✓ Maven est installé (`mvn --version`)
 - ✓ Java 21 est installé (`java --version`)
 - ✓ Node.js est installé (`node --version`)
+- ✓ Gradle installé OU le gradle wrapper du projet fonctionnera
 
 ---
 

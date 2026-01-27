@@ -1,6 +1,7 @@
 node_modules/
 dist/
 build/
+.gradle/
 target/
 *.class
 *.jar
@@ -13,4 +14,4 @@ target/
 *.swo
 *~
 .angular/
-.gradle/
+*.iml

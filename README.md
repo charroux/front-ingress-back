@@ -74,9 +74,9 @@ Pour comprendre en détail comment fonctionne l'application:
 ## 🏗️ Architecture
 
 ### Technologies
-- **Frontend** : Angular 17
-- **Backend** : Java 21 + Spring Boot 3.2
-- **Gateway** : NGINX Ingress Controller (Kubernetes native)
+- **Front-end** : Angular
+- **Back-end** : Java 21 + Spring Boot 3.2 + Gradle
+- **Gateway** : NGINX Ingress Controller
 - **Orchestration** : Kubernetes (Kind - local)
 - **Containerisation** : Docker
 
