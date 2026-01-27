@@ -5,119 +5,67 @@ metadata:
   name: ingress-nginx
 
 ---
-apiVersion: networking.k8s.io/v1
-kind: IngressClass
-metadata:
-  name: nginx
-  annotations:
-    ingressclass.kubernetes.io/is-default-class: "true"
-spec:
-  controller: nginx.org/ingress-controller
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-ingress-controller
-  namespace: ingress-nginx
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: nginx-ingress-controller
-  template:
-    metadata:
-      labels:
-        app: nginx-ingress-controller
-    spec:
-      serviceAccountName: nginx-ingress
-      containers:
-      - name: nginx-ingress-controller
-        image: nginx/nginx-ingress:latest
-        ports:
-        - containerPort: 80
-          name: http
-        - containerPort: 443
-          name: https
-        - containerPort: 8081
-          name: metrics
-        env:
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-ingress
-  namespace: ingress-nginx
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 80
-    targetPort: 80
-    protocol: TCP
-    name: http
-  - port: 443
-    targetPort: 443
-    protocol: TCP
-    name: https
-  selector:
-    app: nginx-ingress-controller
-
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: nginx-ingress
+  name: ingress-nginx
   namespace: ingress-nginx
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: nginx-ingress
+  name: ingress-nginx
 rules:
 - apiGroups: [""]
-  resources: ["configmaps", "secrets", "services", "endpoints", "pods"]
+  resources: ["configmaps", "endpoints", "nodes", "pods", "secrets"]
+  verbs: ["list", "watch"]
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
   verbs: ["get", "list", "watch"]
 - apiGroups: [""]
   resources: ["events"]
   verbs: ["create", "patch"]
 - apiGroups: ["networking.k8s.io"]
-  resources: ["ingresses", "ingressclasses"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: ["networking.k8s.io"]
   resources: ["ingresses/status"]
   verbs: ["update"]
-- apiGroups: ["discovery.k8s.io"]
-  resources: ["endpointslices"]
-  verbs: ["get", "list", "watch"]
-- apiGroups: ["coordination.k8s.io"]
-  resources: ["leases"]
-  verbs: ["get", "list", "watch", "create", "update"]
-- apiGroups: ["k8s.nginx.org"]
-  resources: ["virtualservers", "virtualserverroutes", "transportservers", "policies"]
-  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ingress-nginx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ingress-nginx
+subjects:
+- kind: ServiceAccount
+  name: ingress-nginx
+  namespace: ingress-nginx
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: nginx-ingress
+  name: ingress-nginx
   namespace: ingress-nginx
 rules:
 - apiGroups: [""]
-  resources: ["configmaps", "pods", "secrets", "endpoints"]
+  resources: ["configmaps", "pods", "secrets"]
   verbs: ["get"]
 - apiGroups: [""]
   resources: ["configmaps"]
+  resourceNames: ["ingress-controller-leader"]
   verbs: ["get", "update"]
 - apiGroups: [""]
   resources: ["configmaps"]
@@ -125,32 +73,102 @@ rules:
 - apiGroups: ["coordination.k8s.io"]
   resources: ["leases"]
   verbs: ["get", "create", "update"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: nginx-ingress
+  name: ingress-nginx
   namespace: ingress-nginx
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: nginx-ingress
+  name: ingress-nginx
 subjects:
 - kind: ServiceAccount
-  name: nginx-ingress
+  name: ingress-nginx
   namespace: ingress-nginx
 
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+apiVersion: v1
+kind: Service
 metadata:
-  name: nginx-ingress
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: nginx-ingress
-subjects:
-- kind: ServiceAccount
-  name: nginx-ingress
+  name: ingress-nginx-controller
   namespace: ingress-nginx
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: https
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/instance: ingress-nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingress-nginx
+        app.kubernetes.io/instance: ingress-nginx
+    spec:
+      serviceAccountName: ingress-nginx
+      containers:
+      - name: controller
+        image: registry.k8s.io/ingress-nginx/controller:v1.9.6
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 80
+        - name: https
+          containerPort: 443
+        args:
+        - /nginx-ingress-controller
+        - --election-id=ingress-controller-leader
+        - --controller-class=k8s.io/ingress-nginx
+        - --ingress-class=nginx
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            cpu: 100m
+            memory: 90Mi
+        securityContext:
+          allowPrivilegeEscalation: true
+          runAsNonRoot: false
+
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: k8s.io/ingress-nginx

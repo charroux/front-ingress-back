@@ -130,9 +130,11 @@ cd ..
 
 # 4. Déployer NGINX Ingress Controller
 kubectl apply -f k8s/nginx-ingress-controller.yaml
-kubectl wait --namespace ingress-nginx --for=condition=ready pod \
-    --selector=app=nginx-ingress-controller --timeout=300s
-
+kubectl wait -n ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/name=ingress-nginx \
+  --timeout=300s
+  
 # 5. Déployer l'application
 kubectl apply -f k8s/frontend-deployment.yaml
 kubectl apply -f k8s/backend-deployment.yaml
@@ -151,7 +153,7 @@ kubectl wait --for=condition=ready pod --selector=app=backend --timeout=300s
 
 ```bash
 # Terminal 1: Frontend
-kubectl port-forward service/frontend 8080:80
+kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80
 
 # Ou dans un autre terminal
 kubectl port-forward service/frontend 8080:80 &

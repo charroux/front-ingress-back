@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
  * - Chaque commande reçue est loguée dans la console
  */
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/orders")
 @CrossOrigin(origins = "*")
 public class OrderController {
 
@@ -23,7 +23,7 @@ public class OrderController {
      * Flux:
      * 1. Frontend (Angular) -> POST /api/orders
      * 2. NGINX Ingress route /api -> Service backend:8080
-     * 3. OrderController reçoit la requête
+     * 3. OrderController reçoit la requête sur /orders
      * 4. Commande loguée dans la console
      * 5. Réponse renvoyée au frontend
      */
