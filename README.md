@@ -20,7 +20,15 @@
                                                  ┌──────────────┐
                                                  │   Backend    │
                                                  │(Spring Boot) │
-                                                 │ Logue la cmd │
+                                                 │   + JPA      │
+                                                 └──────┬───────┘
+                                                        │
+                                                        │ Persiste
+                                                        ↓
+                                                 ┌──────────────┐
+                                                 │    MySQL     │
+                                                 │   Database   │
+                                                 │ (StatefulSet)│
                                                  └──────────────┘
 ```
 
@@ -74,7 +82,8 @@ Pour comprendre en détail comment fonctionne l'application:
 
 ### Technologies
 - **Front-end** : Angular
-- **Back-end** : Java 21 + Spring Boot 3.2 + Gradle
+- **Back-end** : Java 21 + Spring Boot 3.2 + Spring Data JPA + Gradle
+- **Base de données** : MySQL 8.0 avec PersistentVolume
 - **Gateway** : NGINX Ingress Controller
 - **Orchestration** : Kubernetes (Kind - local)
 - **Containerisation** : Docker
@@ -89,6 +98,11 @@ Pour comprendre en détail comment fonctionne l'application:
 - [k8s/ingress.yaml](k8s/ingress.yaml)
 
 **Backend** : Comment recevoir et traiter
+- [backend/src/main/java/com/orderapp/OrderRepository.java](backend/src/main/java/com/orderapp/OrderRepository.java)
+- [backend/src/main/java/com/orderapp/Order.java](backend/src/main/java/com/orderapp/Order.java)
+
+**Base de données** : Persistance avec MySQL
+- [k8s/mysql-deployment.yaml](k8s/mysql-deployment.yaml)
 - [backend/src/main/java/com/orderapp/OrderController.java](backend/src/main/java/com/orderapp/OrderController.java)
 
 ---

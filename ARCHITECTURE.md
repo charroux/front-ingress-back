@@ -20,8 +20,16 @@ Cette application démontre une architecture microservices simple avec trois com
 │  ┌──────────────────┐         ┌──────────────────┐        │
 │  │   Frontend Pod   │         │   Backend Pod    │        │
 │  │   (Angular)      │         │  (Spring Boot)   │        │
-│  │   :80            │         │   :8080          │        │
-│  └──────────────────┘         └──────────────────┘        │
+│  │   :80            │         │   + JPA :8080    │        │
+│  └──────────────────┘         └────────┬─────────┘        │
+│                                         │                  │
+│                                         │ JDBC             │
+│                                         ↓                  │
+│                                ┌──────────────────┐        │
+│                                │  MySQL StatefulSet│       │
+│                                │  :3306            │       │
+│                                │  PersistentVolume │       │
+│                                └──────────────────┘        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -88,15 +96,22 @@ rules:
 @RequestMapping("/orders")
 public class OrderController {
 
+    @Autowired
+    private OrderRepository orderRepository;
+
     @PostMapping
     public ResponseEntity<OrderResponse> createOrder(@RequestBody Order order) {
         // La commande est loguée dans la console
         System.out.println("📦 COMMANDE REÇUE DU FRONTEND");
         System.out.println(order.toString());
 
+        // Sauvegarde dans MySQL via JPA
+        Order savedOrder = orderRepository.save(order);
+        System.out.println("✅ Commande sauvegardée dans MySQL avec l'ID: " + savedOrder.getId());
+
         OrderResponse response = new OrderResponse(
             "success",
-            "Commande enregistrée avec succès",
+            "Commande enregistrée avec succès dans la base de données",
             order.getCustomerName()
         );
 
@@ -107,17 +122,59 @@ public class OrderController {
 
 **Processus:**
 1. Spring Boot reçoit la requête POST sur `/orders`
-2. Le contrôleur `OrderController` intercepte la requête
-3. L'objet `Order` est désérialisé depuis le JSON
-4. La commande est loguée dans la console du pod
-5. Une réponse JSON est renvoyée au frontend
+2. Le contrôleur `OrderController` intercepte la requête avec `@PostMapping`
+3. L'objet `Order` est désérialisé depuis le JSON avec `@RequestBody`
+4. La commande est sauvegardée dans MySQL via `OrderRepository.save(order)`
+5. JPA/Hibernate génère automatiquement la requête SQL INSERT
+6. La commande est loguée dans la console du pod avec son ID généré
+7. Une réponse JSON est renvoyée au frontend
 
 **Points clés:**
 - L'annotation `@PostMapping` mappe les requêtes POST
 - L'annotation `@RequestBody` désérialise le JSON
-- La commande est loguée pour que les étudiants puissent voir ce qui est reçu
+- `OrderRepository` hérite de `JpaRepository` pour les opérations CRUD
+- L'annotation `@Entity` sur `Order` indique que c'est une table MySQL
+- JPA crée automatiquement la table si elle n'existe pas (`ddl-auto=update`)
 
-### 4. Réponse au Frontend
+### 4. Persistance dans MySQL
+
+**Fichier clé:** [backend/src/main/java/com/orderapp/Order.java](../backend/src/main/java/com/orderapp/Order.java)
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(nullable = false)
+    private String customerName;
+    
+    private String email;
+    private String itemDescription;
+    private int quantity;
+    private double price;
+    
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+}
+```
+
+**Processus:**
+1. JPA/Hibernate mappe la classe Java à une table MySQL
+2. L'annotation `@Entity` indique que c'est une entité persistante
+3. `@Id` + `@GeneratedValue` génère automatiquement les IDs
+4. Les colonnes sont créées automatiquement depuis les champs
+5. MySQL stocke les données sur un PersistentVolume (1Gi)
+
+**Configuration Kubernetes:**
+- **PersistentVolume**: 1Gi de stockage local (hostPath pour Kind)
+- **PersistentVolumeClaim**: Réserve le volume pour MySQL
+- **StatefulSet**: Garantit l'identité stable du pod MySQL
+- **Service headless**: Permet la connexion directe au pod MySQL
+
+### 5. Réponse au Frontend
 
 La réponse JSON est renvoyée au frontend via le même chemin inverse:
 
@@ -131,44 +188,58 @@ L'Angular service reçoit la réponse et l'affiche à l'utilisateur.
 
 ## Concepts Clés pour les Étudiants
 
-### 1. Découverte de Services
+### 2. Découverte de Services
 
 Dans Kubernetes, les services sont découverts automatiquement par DNS:
 
 ```
-http://backend:8080
-     ↑       ↑
-     |       └─ Nom du service (défini dans k8s/backend-deployment.yaml)
-     └─ Protocole
+http://backend:8080           http://mysql:3306
+     ↑       ↑                      ↑      ↑
+     |       └─ Port du service     |      └─ Port MySQL
+     └─ Nom du service              └─ Nom du service MySQL
 ```
 
-### 2. Routage d'Ingress
-
-L'Ingress Controller inspect le chemin de la requête et la redirige:
+Les variables d'environnement dans le backend configurent la connexion:
+```
+SPRING_DATASOURCE_URL=jdbc:me le chemin de la requête et la redirige:
 
 ```
-Requête: GET /api/orders
+Requête: POST /api/orders
     ↓
 NGINX matching /api → redirige vers backend:8080
     ↓
-Requête transformée: GET http://backend:8080/orders
+Requête transformée: POST http://backend:8080/orders
 ```
 
-### 3. Isolation des Pods
+### 3. Isolation des Pods et Persistance
 
 Chaque pod s'exécute dans un conteneur isolé:
 
 ```
+Frontend Pod          Backend Pod              MySQL StatefulSet
+   nginx              java (Spring Boot)           MySQL 8.0
+   :80                + JPA :8080                    :3306
+                           |                          |
+                           └─────── JDBC ────────────┘
+                                                      |
+                                            PersistentVolume (1Gi)
+                                            /var/lib/mysql
+```
+
+Les pods communiquent via les services Kubernetes, et MySQL utilise un volume persistant pour garantir la durabilité des donné
 Frontend Pod          Backend Pod
    nginx                 java
    :80               (Spring Boot)
                          :8080
 ```
+ et sauvegardée)
+kubectl logs -f deployment/backend
 
-Les pods ne peuvent se communiquer que via les services Kubernetes.
+# Logs de MySQL
+kubectl logs -f statefulset/mysql
 
-### 4. Logs Distribuées
-
+# Logs de NGINX Ingress
+kubectl logs -f deployment/ingress-nginx
 Les étudiants peuvent voir les logs de chaque composant:
 
 ```bash
@@ -212,7 +283,10 @@ L'utilisateur voit:
 - Un message de succès s'affiche
 - Dans la console du navigateur: la requête est envoyée à `/api/orders`
 
-L'étudiant peut voir dans les logs du backend:
+✅ Commande sauvegardée dans MySQL avec l'ID: 1
+```
+
+Dans les logs MySQL, on peut voir les connexions et requêtes SQL.tudiant peut voir dans les logs du backend:
 ```
 ═══════════════════════════════════════════════════
 📦 COMMANDE REÇUE DU FRONTEND
@@ -233,13 +307,25 @@ L'étudiant peut voir exactement le chemin suivi par la requête:
 
 ### Ajouter une nouvelle route
 
-**Dans le frontend** ([frontend/src/app/order.service.ts](../frontend/src/app/order.service.ts)):
-```typescript
-getOrders(): Observable<any> {
-    return this.http.get('/api/orders');
+**Dans le frontend** ([frontend/src/apAllOrders() {
+    List<Order> orders = orderRepository.findAll();
+    System.out.println("📋 Récupération de " + orders.size() + " commandes depuis MySQL");
+    return ResponseEntity.ok(orders);
 }
 ```
 
+**Dans l'Ingress** ([k8s/ingress.yaml](../k8s/ingress.yaml)): Aucune modification nécessaire, le routage `/api` fonctionne pour tous les chemins
+
+### Accéder directement à MySQL
+
+Pour explorer la base de données:
+```bash
+# Se connecter au pod MySQL
+kubectl exec -it mysql-0 -- mysql -uroot -ppassword orderdb
+
+# Lister les commandes
+mysql> SELECT * FROM orders;
+```
 **Dans le backend** ([backend/src/main/java/com/orderapp/OrderController.java](../backend/src/main/java/com/orderapp/OrderController.java)):
 ```java
 @GetMapping

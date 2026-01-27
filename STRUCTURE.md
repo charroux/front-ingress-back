@@ -38,15 +38,17 @@ FrontIngressBack/
 │   └── src/main/java/com/orderapp/
 │       ├── OrderServiceApplication.java  # Point d'entrée
 │       ├── OrderController.java          # REST Controller
-│       ├── Order.java                    # Modèle de commande
+│       ├── OrderRepository.java          # Interface JPA Repository
+│       ├── Order.java                    # Entité JPA (table MySQL)
 │       └── OrderResponse.java            # Modèle de réponse
 │   └── src/main/resources/
-│       └── application.properties        # Configuration Spring
+│       └── application.properties        # Configuration Spring + MySQL
 │
 └── k8s/                         # Fichiers de déploiement Kubernetes
     ├── nginx-ingress-controller.yaml     # NGINX Ingress Controller
     ├── frontend-deployment.yaml          # Déploiement du frontend
-    ├── backend-deployment.yaml           # Déploiement du backend
+    ├── backend-deployment.yaml           # Déploiement du backend + env MySQL
+    ├── mysql-deployment.yaml             # MySQL StatefulSet + PV/PVC
     └── ingress.yaml                      # Configuration du routage
 ```
 
