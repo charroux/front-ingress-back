@@ -186,7 +186,7 @@ L'Angular service reçoit la réponse et l'affiche à l'utilisateur.
 
 ---
 
-## Concepts Clés pour les Étudiants
+## Concepts Clés
 
 ### 2. Découverte de Services
 
@@ -255,7 +255,7 @@ kubectl logs -f deployment/nginx-ingress-controller -n ingress-nginx
 
 ---
 
-## Exécution Pas à Pas pour les Étudiants
+## Exécution Pas à Pas 
 
 ### 1. Lancer l'application
 

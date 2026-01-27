@@ -103,10 +103,11 @@ chmod +x cleanup.sh
 
 Ce script:
 1. ✓ Crée un cluster Kind
-2. ✓ Construit les images Docker
+2. ✓ Construit les images Docker (frontend + backend)
 3. ✓ Les charge dans le cluster
 4. ✓ Déploie NGINX Ingress Controller
-5. ✓ Déploie l'application
+5. ✓ Déploie MySQL avec PersistentVolume
+6. ✓ Déploie l'application (frontend + backend)
 
 ### Option B: Déploiement Manuel
 
@@ -133,13 +134,22 @@ kubectl apply -f k8s/nginx-ingress-controller.yaml
 kubectl wait -n ingress-nginx \
   --for=condition=ready pod \
   --selector=app.kubernetes.io/name=ingress-nginx \
-  --timeout=300s
+
+# 5. Déployer MySQL
+kubectl apply -f k8s/mysql-deployment.yaml
+
+# Attendre que MySQL soit prêt
+kubectl wait --for=condition=ready pod -l app=mysql --timeout=120s
+
+# Vérifier que MySQL est bien démarré
+kubectl logs statefulset/mysql --tail=20
   
-# 5. Déployer l'application
+# 6. Déployer l'application (frontend et backend)
 kubectl apply -f k8s/frontend-deployment.yaml
 kubectl apply -f k8s/backend-deployment.yaml
 kubectl apply -f k8s/ingress.yaml
 
+# 7
 # 6. Attendre que les pods soient prêts
 kubectl wait --for=condition=ready pod --selector=app=frontend --timeout=300s
 kubectl wait --for=condition=ready pod --selector=app=backend --timeout=300s
@@ -180,14 +190,8 @@ kubectl get services
 ```
 
 ---
-
-## Étape 4: Déboguer et Observer le Flux
-
-### Voir le Statut des Déploiements
-
-```bash
-# Déploiements
-kubectl get deployments
+StatefulSets (pour MySQL)
+kubectl get statefulsets
 
 # Pods
 kubectl get pods
@@ -195,6 +199,21 @@ kubectl get pods
 # Services
 kubectl get services
 
+# Ingress
+kubectl get ingress
+
+# PersistentVolumes et PersistentVolumeClaims
+kubectl get pv,pvcents et sauvegardées)
+kubectl logs -f deployment/backend
+
+# Logs de MySQL
+kubectl logs -f statefulset/mysql
+
+# Logs du frontend
+kubectl logs -f deployment/frontend
+
+# Logs de NGINX Ingress
+kubectl logs -f deployment/ingress-nginx
 # Ingress
 kubectl get ingress
 ```
@@ -217,6 +236,20 @@ kubectl logs <pod-name>
 
 ### Entrer dans un Pod
 
+
+# Entrer dans le pod MySQL
+kubectl exec -it mysql-0 -- /bin/bash
+
+# Se connecter à MySQL
+kubectl exec -it mysql-0 -- mysql -uroot -ppassword orderdb
+
+# Lister les commandes sauvegardées
+myTester la connexion backend → MySQL
+kubectl exec -it <backend-pod-name> -- sh -c "apt-get update && apt-get install -y mysql-client && mysql -h mysql -uroot -ppassword -e 'SHOW DATABASES;'"
+
+# sql> SELECT * FROM orders;
+mysql> SHOW TABLES;
+mysql> DESCRIBE orders;
 ```bash
 # Lister les pods
 kubectl get pods
@@ -226,21 +259,26 @@ kubectl exec -it <backend-pod-name> -- /bin/bash
 
 # Vérifier que le service écoute sur le port 8080
 netstat -tulpn | grep 8080
-```
+```Quatre Terminaux
 
-### Tester la Connectivité
-
+**Terminal 1: Logs du Backend**
 ```bash
-# Depuis le frontend, tester la connectivité vers le backend
-kubectl exec -it <frontend-pod-name> -- curl http://backend:8080/orders/health
-
-# Depuis un pod test
-kubectl run test-pod --image=alpine --rm -it --restart=Never -- \
-    wget -O- http://backend:8080/orders/health
+kubectl logs -f deployment/backend
 ```
 
----
+**Terminal 2: Logs de MySQL**
+```bash
+kubectl logs -f statefulset/mysql
+```
 
+**Terminal 3: Logs du Frontend**
+```bash
+kubectl logs -f deployment/frontend
+```
+
+**Terminal 4: Port Forward**
+```bash
+kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller
 ## Étape 5: Voir le Flux Complet
 
 ### 1. Ouvrir Trois Terminaux
@@ -255,9 +293,15 @@ kubectl logs -f deployment/backend
 kubectl logs -f deployment/frontend
 ```
 
-**Terminal 3: Port Forward**
-```bash
-kubectl port-forward service/frontend 8080:80
+✅ Commande sauvegardée dans MySQL avec l'ID: 1
+```
+
+**Terminal 2 (MySQL):**
+```
+2026-01-27T10:00:00.000000Z	    5 Query	INSERT INTO orders (customer_name, email, item_description, quantity, price, created_at) VALUES (...)
+```
+
+**Terminal 3-forward service/frontend 8080:80
 ```
 
 ### 2. Dans le Navigateur
@@ -291,9 +335,47 @@ Order{customerName='Jean Dupont', email='jean@example.com', ...}
 
 ---
 
+### Le backend ne peut pas se connecter à MySQL
+
+```bash
+# 1. Vérifier que MySQL est bien démarré
+kubectl get pods -l app=mysql
+
+# 2. Vérifier les logs MySQL
+kubectl logs statefulset/mysql
+
+# 3. Vérifier la configuration du backend
+kubectl describe deployment backend | grep -A 5 "Environment"
+
+# 4. Tester la connexion depuis le backend
+kubectl exec -it <backend-pod-name> -- sh -c "apt-get update && apt-get install -y telnet && telnet mysql 3306"
+```
+
+### MySQL ne démarre pas
+
+```bash
+# 1. Vérifier le statut du StatefulSet
+kubectl describe statefulset mysql
+
+# 2. Vérifier les PersistentVolume et PersistentVolumeClaim
+kubectl get pv,pvc
+
+# 3. Vérifier les logs
+kubectl logs mysql-0
+
+# 4. Vérifier que le volume est bien monté
+kubectl describe pod mysql-0 | grep -A 5 "Volumes"
+```
+
 ## Troubleshooting
 
 ### Les pods ne se lancent pas
+kubectl delete statefulset mysql
+kubectl delete service mysql
+kubectl delete pvc mysql-pvc
+kubectl delete pv mysql-pv
+kubectl delete secret mysql-secret
+kubectl delete configmap mysql-init
 
 ```bash
 # Voir le détail de l'erreur
@@ -315,6 +397,27 @@ kubectl get services
 # 2. Vérifier que l'Ingress est correctement configuré
 kubectl describe ingress app-ingress
 
+- ✓ Au moins 2 Go d'espace disque libre pour les volumes MySQL
+
+---
+
+## Vérification de l'Installation MySQL
+
+Après le déploiement, vérifiez que MySQL fonctionne correctement :
+
+```bash
+# Vérifier que le pod MySQL est en Running
+kubectl get pods -l app=mysql
+
+# Se connecter à MySQL et vérifier la base de données
+kubectl exec -it mysql-0 -- mysql -uroot -ppassword -e "SHOW DATABASES; USE orderdb; SHOW TABLES;"
+
+# Insérer une commande de test manuellement
+kubectl exec -it mysql-0 -- mysql -uroot -ppassword orderdb -e \
+  "INSERT INTO orders (customer_name, email, item_description, quantity, price, created_at) \
+   VALUES ('Test', 'test@test.com', 'Test Item', 1, 10.0, NOW()); \
+   SELECT * FROM orders;"
+```
 # 3. Tester la connectivité
 kubectl exec -it <frontend-pod-name> -- curl http://backend:8080/orders/health
 ```

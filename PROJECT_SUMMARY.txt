@@ -184,21 +184,6 @@ Logs du backend:
 
 ═══════════════════════════════════════════════════════════════════════
 
-🎓 PRÊT POUR LES ÉTUDIANTS!
-─────────────────────────────────────────────────────────────────────
-
-Cette application est prête à être utilisée dans un contexte pédagogique.
-Les étudiants en informatique peuvent:
-
-✓ Voir une architecture microservices en action
-✓ Comprendre le rôle de chaque composant
-✓ Observer le flux de données en temps réel
-✓ Modifier et étendre l'application
-✓ Apprendre Kubernetes de manière progressive
-✓ Maîtriser Docker et la conteneurisation
-
-═══════════════════════════════════════════════════════════════════════
-
 PROCHAINES ÉTAPES:
 
 1. Vérifier les prérequis: ./quickstart.sh

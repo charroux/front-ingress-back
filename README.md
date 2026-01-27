@@ -57,7 +57,7 @@ chmod +x deploy.sh cleanup.sh
 ./deploy.sh
 
 # Dans un nouveau terminal, accéder au frontend
-kubectl port-forward service/frontend 8080:80 &
+kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80
 
 # Ouvrir le navigateur
 open http://localhost:8080
