@@ -1,27 +1,13 @@
-# Stage 1: Build Angular app
-FROM node:20-alpine AS builder
-
+# Stage 1: Build
+FROM gradle:8.5-jdk21 AS build
 WORKDIR /app
+COPY build.gradle settings.gradle ./
+COPY src ./src
+RUN gradle build --no-daemon -x test
 
-# Copie package.json et installe les dépendances
-COPY package*.json ./
-RUN npm ci
-
-# Copie le code source
-COPY . .
-
-# Build l'application
-RUN npm run build
-
-# Stage 2: Serve avec nginx
-FROM nginx:alpine
-
-# Copie les fichiers de configuration nginx
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copie l'application buildée
-COPY --from=builder /app/dist/order-app-frontend/browser /usr/share/nginx/html
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# Stage 2: Run
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=build /app/build/libs/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

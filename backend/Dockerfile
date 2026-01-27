@@ -1,19 +1,18 @@
 # Stage 1: Build
-FROM eclipse-temurin:21-jdk AS builder
+FROM gradle:8.5-jdk21 AS builder
 
 WORKDIR /app
 
 # Copie les fichiers Gradle
-COPY gradle ./gradle
-COPY gradlew .
 COPY build.gradle .
 COPY settings.gradle .
+COPY gradle ./gradle
 
 # Copie le code source
 COPY src ./src
 
-# Construit l'application
-RUN chmod +x gradlew && ./gradlew bootJar --no-daemon
+# Construit l'application (Gradle est déjà disponible)
+RUN gradle bootJar --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre

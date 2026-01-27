@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
-import { AppComponent } from './app.component';
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { AppComponent } from './app/app.component';
 
-@Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [AppComponent],
-  template: '<app-root></app-root>',
-})
-export class RootComponent {}
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideHttpClient(),
+    provideAnimations()
+  ]
+}).catch(err => console.error(err));

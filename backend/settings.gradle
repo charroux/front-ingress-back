@@ -1,7 +1,1 @@
-plugins {
-    id 'org.gradle.wrapper'
-}
-
-wrapper {
-    gradleVersion = '8.5'
-}
+rootProject.name = 'order-service'

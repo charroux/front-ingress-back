@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
  * - Chaque commande reçue est loguée dans la console
  */
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/api/orders")
 @CrossOrigin(origins = "*")
 public class OrderController {
 

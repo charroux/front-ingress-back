@@ -31,5 +31,5 @@ jar {
 }
 
 bootJar {
-    mainClass = 'com.orderapp.OrderServiceApplication'
+    archiveBaseName = 'order-service'
 }
