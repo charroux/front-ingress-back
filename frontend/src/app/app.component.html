@@ -1,0 +1,160 @@
+<!-- 
+  AppComponent HTML Template
+  Formulaire de prise de commande
+  
+  POINT CLÉ: Ce formulaire envoie les données via HTTP POST à /api/orders
+  NGINX Ingress intercepte ce chemin et le redirige vers le backend
+-->
+
+<div class="container">
+  <header>
+    <h1>📦 Application de Prise de Commande</h1>
+    <p>Formulaire simple de démonstration Frontend → Gateway → Backend</p>
+  </header>
+
+  <!-- Messages de succès/erreur -->
+  <div *ngIf="successMessage" class="alert success">
+    ✅ {{ successMessage }}
+  </div>
+
+  <div *ngIf="errorMessage" class="alert error">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Formulaire -->
+  <form [formGroup]="orderForm" (ngSubmit)="onSubmit()" class="order-form">
+    
+    <div class="form-group">
+      <label for="customerName">Nom du client</label>
+      <input 
+        type="text" 
+        id="customerName" 
+        formControlName="customerName"
+        placeholder="Jean Dupont"
+        [class.error]="submitted && f['customerName'].errors"
+      />
+      <span *ngIf="submitted && f['customerName'].errors" class="error-text">
+        Veuillez entrer un nom valide (minimum 2 caractères)
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input 
+        type="email" 
+        id="email" 
+        formControlName="email"
+        placeholder="jean@example.com"
+        [class.error]="submitted && f['email'].errors"
+      />
+      <span *ngIf="submitted && f['email'].errors" class="error-text">
+        Veuillez entrer une adresse email valide
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label for="itemDescription">Description de l'article</label>
+      <input 
+        type="text" 
+        id="itemDescription" 
+        formControlName="itemDescription"
+        placeholder="Laptop Dell XPS 13"
+        [class.error]="submitted && f['itemDescription'].errors"
+      />
+      <span *ngIf="submitted && f['itemDescription'].errors" class="error-text">
+        Veuillez entrer une description (minimum 5 caractères)
+      </span>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="quantity">Quantité</label>
+        <input 
+          type="number" 
+          id="quantity" 
+          formControlName="quantity"
+          placeholder="1"
+          min="1"
+          [class.error]="submitted && f['quantity'].errors"
+        />
+        <span *ngIf="submitted && f['quantity'].errors" class="error-text">
+          Veuillez entrer une quantité valide
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="price">Prix unitaire (€)</label>
+        <input 
+          type="number" 
+          id="price" 
+          formControlName="price"
+          placeholder="999.99"
+          min="0"
+          step="0.01"
+          [class.error]="submitted && f['price'].errors"
+        />
+        <span *ngIf="submitted && f['price'].errors" class="error-text">
+          Veuillez entrer un prix valide
+        </span>
+      </div>
+    </div>
+
+    <button 
+      type="submit" 
+      class="submit-btn"
+      [disabled]="isLoading"
+    >
+      {{ isLoading ? '⏳ Envoi...' : '📨 Envoyer la commande' }}
+    </button>
+  </form>
+
+  <!-- Explication de l'architecture -->
+  <section class="info-section">
+    <h2>🏗️ Architecture</h2>
+    <p><strong>Flux d'une commande:</strong></p>
+    <div class="architecture-flow">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <strong>Frontend (Angular)</strong>
+          <p>Vous remplissez le formulaire et cliquez "Envoyer"</p>
+          <code>POST /api/orders</code>
+        </div>
+      </div>
+      
+      <div class="arrow">→</div>
+      
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <strong>Gateway (NGINX Ingress)</strong>
+          <p>Intercepte /api/* et redirige vers le backend</p>
+          <code>backend:8080</code>
+        </div>
+      </div>
+      
+      <div class="arrow">→</div>
+      
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <strong>Backend (Spring Boot)</strong>
+          <p>Reçoit et logue la commande</p>
+          <code>OrderController</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Debugging -->
+  <section class="debug-section">
+    <h2>🐛 Debugging</h2>
+    <p>Ouvrez la console du navigateur (F12) pour voir les logs:</p>
+    <ul>
+      <li>✅ Requêtes envoyées au backend</li>
+      <li>✅ Réponses du backend</li>
+      <li>✅ Erreurs potentielles</li>
+    </ul>
+    <p>Utilisez également: <code>kubectl logs -f deployment/backend</code></p>
+  </section>
+</div>

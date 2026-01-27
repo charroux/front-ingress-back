@@ -1,0 +1,39 @@
+{
+  "name": "FrontIngressBack",
+  "description": "Application simple de prise de commande: Frontend Angular → NGINX Ingress → Backend Spring Boot",
+  "version": "1.0.0",
+  "structure": {
+    "frontend": {
+      "description": "Application Angular - Interface de prise de commande",
+      "language": "TypeScript/Angular",
+      "port": 80,
+      "entrypoint": "src/main.ts"
+    },
+    "backend": {
+      "description": "Service Spring Boot - Traitement des commandes",
+      "language": "Java 21",
+      "port": 8080,
+      "entrypoint": "src/main/java/com/orderapp/OrderServiceApplication.java"
+    },
+    "k8s": {
+      "description": "Fichiers de déploiement Kubernetes",
+      "files": [
+        "nginx-ingress-controller.yaml",
+        "frontend-deployment.yaml",
+        "backend-deployment.yaml",
+        "ingress.yaml"
+      ]
+    }
+  },
+  "quick_start": [
+    "1. chmod +x deploy.sh",
+    "2. ./deploy.sh",
+    "3. kubectl port-forward service/frontend 8080:80 &",
+    "4. Ouvrez http://localhost:8080"
+  ],
+  "debugging": [
+    "Logs du backend: kubectl logs -f deployment/backend",
+    "Logs du frontend: kubectl logs -f deployment/frontend",
+    "Accéder à un pod: kubectl exec -it <pod-name> -- /bin/bash"
+  ]
+}
